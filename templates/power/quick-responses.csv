@@ -1,0 +1,7 @@
+description,action,params,condition
+Screen Was [B]lack,write_result,"'Resumes?', 'resumes to black screen'",
+Screen Was [B]lack,reboot, ,is_current_boot
+Resumed [O]k,write_result,"'Resumes?', 'Resume OK'",
+[Q]uit,quit,,
+[R]eboot,reboot,,
+[D]iscard,discard,,

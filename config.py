@@ -5,6 +5,7 @@ from pathlib import Path
 @dataclasses.dataclass
 class Config:
     template_name: str
+    custom_report_headers: list
     amd_s2idle: Path = Path("~/bin/amd_s2idle.py").expanduser()
 
     def validate(self):

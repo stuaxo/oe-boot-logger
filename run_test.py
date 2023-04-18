@@ -1,5 +1,7 @@
+import atexit
 import subprocess
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 from rich.pretty import pprint
@@ -7,7 +9,7 @@ from rich.pretty import pprint
 from actions import parse_response_file
 from config import Config
 from helpers import tests_are_pending, get_pending_directory, read_scenario_csv, read_concrete_scenario_csv, \
-    finalise_test
+    finalise_test, read_single_concrete_scenario_csv, gather_scenario_results
 from journal_utils import get_current_boot_id, write_journal_to_path
 from menu_helper import choose_option
 
@@ -54,16 +56,24 @@ def setup_next_pending_test_directory():
     return output_dir
 
 
-def get_context(test_directory):
+@lru_cache(maxsize=1)
+def get_prefix(test_directory):
+    return (Path(test_directory) / "prefix").read_text()
+
+
+def get_context(test_directory, config):
     boot_id = get_test_boot_id(test_directory)
+    prefix = get_prefix(test_directory)
     current_boot_id = get_current_boot_id()
     scenario_file = test_directory / "scenario.csv"
     context = {
+        "config": config,
         "is_current_boot": boot_id == current_boot_id,
         "boot_id": boot_id,
         "current_boot_id": current_boot_id,
         "test_directory": test_directory,
         "scenario_file": scenario_file,
+        "prefix": prefix,
     }
     return context
 
@@ -71,7 +81,8 @@ def get_context(test_directory):
 def run_s2idle(test_directory, config):
     # TODO - run s2idle
     use_sudo = True
-    cmd = [f'{config.amd_s2idle}', '--log', str(test_directory / 'amd_s2idle.log'), '--wait', '10']
+    prefix = get_prefix(test_directory)
+    cmd = [f'{config.amd_s2idle}', '--log', str(test_directory / f'{prefix}-amd_s2idle.log'), '--wait', '10']
 
     if use_sudo:
         cmd = ['sudo'] + cmd
@@ -93,7 +104,10 @@ def get_user_feedback(config, context, speak=False):
         # TODO - speak the menu
         do_say('Ready')
 
-    option = choose_option('Options', menu_actions.keys())
+    scenario = read_single_concrete_scenario_csv(context["scenario_file"])
+    title = ", ".join([f"{k}:{v}" for k, v in scenario.items()])
+
+    option = choose_option(title, menu_actions.keys())
     actions = menu_actions.get(option, [])
 
     for action, params in actions:
@@ -107,12 +121,12 @@ def run_test(test_directory, config):
     print(f"run_test: {test_directory}")
 
     # Read the scenario
-    context = get_context(test_directory)
+    context = get_context(test_directory, config)
     print("context:")
     pprint(context)
 
     scenario_file = context["scenario_file"]
-    scenario = next(read_concrete_scenario_csv(scenario_file))
+    scenario = read_single_concrete_scenario_csv(scenario_file)
     context["scenario"] = scenario
     pprint(scenario)
 
@@ -120,8 +134,9 @@ def run_test(test_directory, config):
     # Gather boot log
     # TODO - don't gather the log if it has already been written and
     #        the size matches.
-    write_journal_to_path(test_directory / "journal-k.log", boot_id)
-    if context["is_current_boot"] and False:
+    prefix = context["prefix"]
+    write_journal_to_path(test_directory / f"{prefix}-journal-k.log", boot_id)
+    if context["is_current_boot"]:
         # Run s2idle
         run_s2idle(test_directory, config)
 
@@ -152,13 +167,22 @@ def run_running_tests():
     """
     running_directory = Path("runtime") / "running"
     for test_directory in running_directory.iterdir():
-        config = Config(template_name="power")
+        config = Config(
+            template_name="power",
+            custom_report_headers=["amd_s2idle", "kernel_log"]
+        )
         run_test(test_directory, config)
 
 
 def main():
+    config = Config(
+        template_name="power",
+        custom_report_headers=["amd_s2idle", "kernel_log"]
+    )
+
+    atexit.register(gather_scenario_results, config)
+
     # If there are any running tests, then record the results.
-    # TODO
     if test_are_running():
         run_running_tests()
         sys.exit(0)
@@ -166,9 +190,7 @@ def main():
     print("No tests running")
 
     # If there are any pending tests, then run them.
-    # TODO
     if tests_are_pending():
-        config = Config(template_name="power")
         run_pending_tests(config)
     else:
         print("No tests pending")

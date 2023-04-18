@@ -114,6 +114,8 @@ class WriteResult(Action):
 class Quit(Action):
     def run(self, context, **args):
         print("Quitting")
+        # Finalise the test, since we don't want to write any results.
+        context["test_finalised"] = True
 
 
 def camel_case_to_underscore_case(name):

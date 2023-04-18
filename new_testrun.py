@@ -1,5 +1,6 @@
 import re
 from csv import DictWriter
+from datetime import datetime
 from pathlib import Path
 
 from helpers import get_pending_directory, read_scenario_csv
@@ -24,7 +25,7 @@ def normalise_question_row(user_question_row):
                       if '?' not in k])
 
 
-def setup_pending_test(output_dir: Path, fieldnames, settings):
+def setup_pending_test(output_dir: Path, fieldnames, settings, prefix):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Create a new CSV file using the fieldnames from reader
@@ -32,6 +33,8 @@ def setup_pending_test(output_dir: Path, fieldnames, settings):
         writer = DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerow(settings)
+
+    Path(output_dir / "prefix").write_text(prefix)
 
 
 def setup_pending_tests(config):
@@ -45,16 +48,20 @@ def setup_pending_tests(config):
     if pending_directory.is_dir() and any(pending_directory.iterdir()):
         raise ValueError("There are pending tests. Please run them before creating new tests")
 
+
+    creation_time = datetime.now().strftime("%Y%m%d-%H%M")
     template_directory = Path("templates") / config.template_name
 
     for number, settings in enumerate(read_scenario_csv(template_directory / "scenarios.csv"), start=1):
-        output_dir = pending_directory / f"{number}-{config.template_name}--{normalise_question_row(settings)}"
-        setup_pending_test(output_dir, settings.keys(), settings)
+        prefix = f"{creation_time}-{number}"
+        output_dir = pending_directory / f"{prefix}-{config.template_name}--{normalise_question_row(settings)}"
+        setup_pending_test(output_dir, settings.keys(), settings, prefix)
 
 
 def main():
     config = Config(
-        template_name="power"
+        template_name="power",
+        custom_report_headers=["amd_s2idle", "kernel_log"]
     )
 
     setup_pending_tests(config)

@@ -1,6 +1,4 @@
-Power Source,Displays,Resumes?
-battery,laptop,
-battery,hdmi,
-ac,laptop,
-ac,hdmi,
-usbc,"laptop ,usbc",
+Power Source,Resumes?
+battery,
+ac,
+usbc,

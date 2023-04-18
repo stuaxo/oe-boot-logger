@@ -14,7 +14,8 @@ def ensure_result_directory(template_name):
 
 def main():
     config = Config(
-        template_name="power"
+        template_name="power",
+        custom_report_headers = ["amd_s2idle", "kernel_log"]
     )
 
     ensure_result_directory(config.template_name)

@@ -4,33 +4,50 @@ Over Engineered Boot Logging.
 Over engineering things can be fun :)
 
 
-Note:  Currently this is probably only useful to me.
+Note:  Currently this is probably only useful to me, and no effort has been made to make it production ready.
 
 
 Collecting info about bugs that can crash the computer or make the screen black can be painful.
 
-I was debugging am issue that could cause a black screen facilitating a reboot.
-On rebooting it was important to gather logs from journalctl, then remember what else was
-needed for the bug report.
+This was made to make make it easier to collect logs for this issue:
+https://gitlab.freedesktop.org/drm/amd/-/issues/2449
+
+Since the screen could go black with sometimes responsive keyboard it makes it necessary
+to collect info before a possible reboot, then finish collecting information afterwards.
+
+Requirements:
+    amd_s2idle.py:  location specified in config.py
+
+The process is split into two parts:
+
+Setting up test scenarios
+
+`$ python new_test.py power`
+
+This sets up pending tests to run using the "power" template (currently the only template)
+
+templates specify a set of scenarios (data to collect), and also a set of "quick responses".
+quick responses are used to populate a menu, so the user can record the result of the test,
+either immediately or after a reboot.
 
 
-This script simplifies things a little:
+Running a test scenario
 
-Test scenarios can be setup from a templates (see templates/power for an example), with extra information
-the user wants to specify: in the power example this includes which power source is being used.
+`$ python run_test.py`
 
-new_test.py
-
-Create a set of pending test scenarios by iterating scenarios.csv and creating a folder for each line in runtime/pending
+This script either runs a test and lets the user record a result or run an action.
+If a test is waiting for a result it will prompt the to record the result or run an action.
 
 
-run_test.py
+Actions:
 
-If there is pending test, then run it (the power test will run amd_s2idle.py).
+![alt text](quick-response-menu.png)
 
-If the test completes and the user can see the screen, then a result can be recorded by choosing a menu option.
-(Menu options are set in quick-responses.csv in the template folder).
+`quick-responses.csv` contains a list of actions that can be run after a test.
 
-If the screen is black the user may restart (e.g. ALT-Printscreen and typing R E I S U B).
+To make more than one action run on a keypress, repeat the description in the csv file
+specifying each action.
 
-On returning the user may run run_test.py again to record the result of the previous test.
+Actions may be toggled by data in the test context, for example the `power` template will
+reboot the computer after recording the result, but only if it's recording a result
+for this boot (rebooting while recording an old result would not be useful).

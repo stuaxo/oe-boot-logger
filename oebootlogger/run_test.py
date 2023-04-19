@@ -3,6 +3,7 @@ import subprocess
 import sys
 from functools import lru_cache
 from pathlib import Path
+from pprint import pprint
 
 from actions import parse_response_file
 from config import Config

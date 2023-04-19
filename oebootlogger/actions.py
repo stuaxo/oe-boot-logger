@@ -7,6 +7,7 @@ import subprocess
 
 from collections import defaultdict
 from pathlib import Path
+from pprint import pprint
 
 from helpers import finalise_test
 from menu_helper import SimplishMenu

@@ -4,12 +4,15 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 
-from rich.pretty import pprint
-
 from actions import parse_response_file
 from config import Config
-from helpers import tests_are_pending, get_pending_directory, read_scenario_csv, read_concrete_scenario_csv, \
-    finalise_test, read_single_concrete_scenario_csv, gather_scenario_results
+from helpers import (
+    tests_are_pending,
+    get_pending_directory,
+    finalise_test,
+    read_single_concrete_scenario_csv,
+    gather_scenario_results,
+)
 from journal_utils import get_current_boot_id, write_journal_to_path
 from menu_helper import choose_option
 
@@ -82,19 +85,24 @@ def run_s2idle(test_directory, config):
     # TODO - run s2idle
     use_sudo = True
     prefix = get_prefix(test_directory)
-    cmd = [f'{config.amd_s2idle}', '--log', str(test_directory / f'{prefix}-amd_s2idle.log'), '--wait', '10']
+    cmd = [
+        f"{config.amd_s2idle}",
+        "--log",
+        str(test_directory / f"{prefix}-amd_s2idle.log"),
+        "--wait",
+        "10",
+    ]
 
     if use_sudo:
-        cmd = ['sudo'] + cmd
+        cmd = ["sudo"] + cmd
     # print in bright white:
-    print('\033[1;37m' + ' '.join(cmd) + '\033[0m')
-    subprocess.run(
-        cmd)
+    print("\033[1;37m" + " ".join(cmd) + "\033[0m")
+    subprocess.run(cmd)
 
 
 def do_say(msg):
     print(msg)
-    subprocess.run(['spd-say', msg])
+    subprocess.run(["spd-say", msg])
 
 
 def get_user_feedback(config, context, speak=False):
@@ -102,7 +110,7 @@ def get_user_feedback(config, context, speak=False):
     menu_actions = parse_response_file(config.template_name, context)
     if speak:
         # TODO - speak the menu
-        do_say('Ready')
+        do_say("Ready")
 
     scenario = read_single_concrete_scenario_csv(context["scenario_file"])
     title = ", ".join([f"{k}:{v}" for k, v in scenario.items()])
@@ -168,16 +176,14 @@ def run_running_tests():
     running_directory = Path("runtime") / "running"
     for test_directory in running_directory.iterdir():
         config = Config(
-            template_name="power",
-            custom_report_headers=["amd_s2idle", "kernel_log"]
+            template_name="power", custom_report_headers=["amd_s2idle", "kernel_log"]
         )
         run_test(test_directory, config)
 
 
 def main():
     config = Config(
-        template_name="power",
-        custom_report_headers=["amd_s2idle", "kernel_log"]
+        template_name="power", custom_report_headers=["amd_s2idle", "kernel_log"]
     )
 
     atexit.register(gather_scenario_results, config)

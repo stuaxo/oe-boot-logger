@@ -8,10 +8,8 @@ import subprocess
 from collections import defaultdict
 from pathlib import Path
 
-from rich.pretty import pprint
-
-from helpers import read_concrete_scenario_csv, finalise_test
-from menu_helper import SimplishMenu, choose_option
+from helpers import finalise_test
+from menu_helper import SimplishMenu
 
 
 @functools.lru_cache(maxsize=1)
@@ -63,7 +61,7 @@ class Reboot(Action):
 
         # Rebooting interrupts the normal flow, so manually finalise the test.
         finalise_test(context)
-        #subprocess.run(["sudo", "reboot", "now"])
+        # subprocess.run(["sudo", "reboot", "now"])
 
 
 class Discard(Action):
@@ -137,9 +135,7 @@ ACTIONS = {
 
 
 def get_conditions():
-    conditions = {
-        "is_current_boot": False  # TODO
-    }
+    conditions = {"is_current_boot": False}  # TODO
     return conditions
 
 

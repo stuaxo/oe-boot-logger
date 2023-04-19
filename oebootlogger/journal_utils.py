@@ -18,11 +18,11 @@ def parse_date(date_str):
 
 def parse_daterange(daterange_str):
     """
-    Parse a journalctl boot log range into a tuple of datetimes
+       Parse a journalctl boot log range into a tuple of datetimes
 
-    >>> parse_daterange("Sat 2023-04-01 17:26:32 BST—Sat 2023-04-01 17:28:21 BST")
-    (datetime.datetime(2023, 4, 1, 17, 26, 32),
- datetime.datetime(2023, 4, 1, 17, 26, 32))
+       >>> parse_daterange("Sat 2023-04-01 17:26:32 BST—Sat 2023-04-01 17:28:21 BST")
+       (datetime.datetime(2023, 4, 1, 17, 26, 32),
+    datetime.datetime(2023, 4, 1, 17, 26, 32))
     """
     start_str, end_str = daterange_str.split("—")
 
@@ -80,4 +80,6 @@ def write_journal_to_path(journal_log_path, boot_ref):
                 f.write(line)
     finally:
         proc.kill()
+
+
 #

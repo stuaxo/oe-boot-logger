@@ -1,10 +1,7 @@
-import dataclasses
 from csv import DictReader
 from functools import lru_cache
 from pathlib import Path
-
-import pandas as pd
-from rich.pretty import pprint
+from tabulate import tabulate
 
 
 @lru_cache(maxsize=1)
@@ -48,7 +45,7 @@ def read_concrete_scenario_csv(csv_file):
     key does not contain a question mark).
     """
     for settings in read_scenario_csv(csv_file):
-        yield {k: v for k, v in settings.items() if '?' not in k}
+        yield {k: v for k, v in settings.items() if "?" not in k}
 
 
 def read_single_concrete_scenario_csv(csv_file, raise_on_multiple=True):
@@ -65,7 +62,9 @@ def read_single_concrete_scenario_csv(csv_file, raise_on_multiple=True):
         pass
     else:
         if raise_on_multiple:
-            raise ValueError(f"Expected a single row in {csv_file}, but found more than one")
+            raise ValueError(
+                f"Expected a single row in {csv_file}, but found more than one"
+            )
 
     return settings
 
@@ -95,25 +94,33 @@ def gather_scenario_results(config):
     :return:
     """
     extra_headers = getattr(config, "custom_report_headers", [])
-    expected_headers = read_scenario_headers(Path("templates") / config.template_name / "scenarios.csv")
+    expected_headers = read_scenario_headers(
+        Path("templates") / config.template_name / "scenarios.csv"
+    )
 
+    headers = expected_headers + extra_headers
     scenario_data = []
-    for result_directory in Path("results").iterdir():
-        scenario_file = result_directory / "scenario.csv"
-        if not scenario_file.is_file():
-            print("no scenario file", scenario_file)
-            continue
+    if Path("results").is_dir():
+        for result_directory in Path("results").iterdir():
+            scenario_file = result_directory / "scenario.csv"
+            if not scenario_file.is_file():
+                print("no scenario file", scenario_file)
+                continue
 
-        for scenario in read_scenario_csv(scenario_file):
-            if list(scenario.keys()) != expected_headers:
-                raise ValueError(
-                    f"Unexpected headers in {scenario_file}, expected {expected_headers}, but found {scenario.keys()}")
+            for scenario in read_scenario_csv(scenario_file):
+                if list(scenario.keys()) != expected_headers:
+                    raise ValueError(
+                        f"Unexpected headers in {scenario_file}, expected {expected_headers}, but found {scenario.keys()}"
+                    )
 
-            for extra_header in extra_headers:
-                scenario.setdefault(extra_header, "")
+                for extra_header in extra_headers:
+                    scenario.setdefault(extra_header, "")
 
-            scenario_data.append(scenario)
+                scenario_data.append(scenario)
 
-    df = pd.DataFrame(scenario_data or [{h: "" for h in expected_headers+extra_headers}])
-    markdown = df.to_markdown(index=False)
+    if not scenario_data:
+        print("No scenario results")
+        return
+
+    markdown = tabulate(scenario_data, headers={}, tablefmt="github")
     print(markdown)
